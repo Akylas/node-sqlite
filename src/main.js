@@ -7,11 +7,125 @@
  * LICENSE.txt file in the root directory of this source tree.
  */
 
-import sqlite3 from 'sqlite3';
 import Database from './Database';
+import {
+  EventEmitter
+} from 'events';
 
-const promise = global.Promise;
-const db = new Database(null, { Promise: promise });
+const promise = Promise;
+const db = new Database(null, {
+  Promise: promise
+});
+
+class TiSTMt {
+  constructor(resultSet) {
+    this.resultSet = resultSet;
+  }
+
+  finalize() {
+    this.resultSet.close();
+  }
+  get() {
+    return this.resultSet.getField(0);
+  }
+  all() {
+    return this.resultSet.all();
+  }
+  get lastID() {
+    return this.stmt.lastID;
+  }
+
+}
+
+class TiDBDriver extends EventEmitter {
+  constructor(filename, mode, callback) {
+    super();
+    this.isInstanceWithTransaction = true;
+    try {
+      this.db = Ti.Database.open(filename);
+      callback && callback();
+    } catch (err) {
+      if (callback){
+        callback(err);
+      } else {
+        throw err;
+      }
+    }
+  }
+  close() {
+    try {
+      this.db.close();
+      callback && callback();
+    } catch (err) {
+      if (callback){
+        callback(err);
+      } else {
+        throw err;
+      }
+    }
+  }
+  exec(sql, callback) {
+    try {
+      let result = this.db.executeStatements(sql);
+      callback && callback();
+    } catch (err) {
+      if (callback){
+        callback(err);
+      } else {
+        throw err;
+      }
+    }
+  }
+  run(sql, params, callback) {
+    if (!callback && typeof params === 'function') {
+      callback = params;
+      params = undefined;
+    }
+    try {
+      let result = this.db.execute(sql, params);
+      callback && callback(result ? new TiSTMt(result) : null);
+    } catch (err) {
+      if (callback){
+        callback(err);
+      } else {
+        throw err;
+      }
+    }
+  }
+  all(sql, params, callback) {
+    if (!callback && typeof params === 'function') {
+      callback = params;
+      params = undefined;
+    }
+    try {
+      let result = this.db.execute(sql, params);
+      callback && callback(null, result.all());
+    } catch (err) {
+      if (callback){
+        callback(err);
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  get(sql, params, callback) {
+    if (!callback && typeof params === 'function') {
+      callback = params;
+      params = undefined;
+    }
+    try {
+      let result = this.db.execute(sql, params);
+      callback && callback(null, result.get());
+    } catch (err) {
+      if (callback){
+        callback(err);
+      } else {
+        throw err;
+      }
+    }
+  }
+}
 
 /**
  * Opens SQLite database.
@@ -22,41 +136,34 @@ db.open = (filename, {
   mode = null,
   verbose = false,
   Promise = promise,
-  cached = false } = {}) => {
+  cached = false
+} = {}) => {
   let driver;
-  let DBDriver = sqlite3.Database;
+  let DBDriver = TiDBDriver;
 
-  if (cached) {
-    DBDriver = sqlite3.cached.Database;
-  }
+  // if (cached) {
+  //   DBDriver = sqlite3.cached.Database;
+  // }
 
-  if (verbose) {
-    sqlite3.verbose();
-  }
+  // if (verbose) {
+  //   sqlite3.verbose();
+  // }
 
   return new Promise((resolve, reject) => {
-    if (mode !== null) {
-      driver = new DBDriver(filename, mode, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    } else {
-      driver = new DBDriver(filename, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    }
+    driver = new DBDriver(filename, mode, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
   }).then(() => {
     db.driver = driver;
     db.Promise = Promise;
-    return new Database(driver, { Promise });
+    return new Database(driver, {
+      Promise
+    });
   });
 };
 
-export default db;
+exports = db;

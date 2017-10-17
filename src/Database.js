@@ -147,7 +147,7 @@ class Database {
         }
       });
     });
-
+    
     if (!migrations.length) {
       throw new Error(`No migration files found in '${location}'.`);
     }
@@ -175,7 +175,7 @@ class Database {
         }
       });
     })));
-
+    
     // Create a database table for migrations meta data if it doesn't exist
     await this.run(`CREATE TABLE IF NOT EXISTS "${table}" (
   id   INTEGER PRIMARY KEY,
@@ -188,7 +188,7 @@ class Database {
     let dbMigrations = await this.all(
       `SELECT id, name, up, down FROM "${table}" ORDER BY id ASC`,
     );
-
+    
     // Undo migrations that exist only in the database but not in files,
     // also undo the last migration if the `force` option was set to `last`.
     const lastMigration = migrations[migrations.length - 1];
