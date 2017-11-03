@@ -11,7 +11,6 @@ import Database from './Database';
 import {
   EventEmitter
 } from 'events';
-
 const promise = Promise;
 const db = new Database(null, {
   Promise: promise
@@ -23,16 +22,20 @@ class TiSTMt {
   }
 
   finalize() {
+    if (this.resultSet)
     this.resultSet.close();
   }
   get() {
+    if (this.resultSet)
     return this.resultSet.getField(0);
   }
   all() {
+    if (this.resultSet)
     return this.resultSet.all();
   }
   get lastID() {
-    return this.stmt.lastID;
+    if (this.resultSet)
+    return this.resultSet.lastID;
   }
 
 }
@@ -83,7 +86,8 @@ class TiDBDriver extends EventEmitter {
     }
     try {
       let result = this.db.execute(sql, params);
-      callback && callback(result ? new TiSTMt(result) : null);
+      let statement = new TiSTMt(result);
+      callback && callback.call(statement, null);
     } catch (err) {
       if (callback){
         callback(err);
@@ -166,4 +170,4 @@ db.open = (filename, {
   });
 };
 
-exports = db;
+module.exports = exports = db;
