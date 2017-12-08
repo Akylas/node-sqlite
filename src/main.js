@@ -35,7 +35,7 @@ class TiSTMt {
   }
   get lastID() {
     if (this.resultSet)
-    return this.resultSet.lastID;
+    return this.resultSet.lastInsertRowId;
   }
 
 }
@@ -103,7 +103,9 @@ class TiDBDriver extends EventEmitter {
     }
     try {
       let result = this.db.execute(sql, params);
+      let statement = new TiSTMt(result);
       callback && callback(null, result.all());
+      statement.finalize();
     } catch (err) {
       if (callback){
         callback(err);
@@ -120,7 +122,9 @@ class TiDBDriver extends EventEmitter {
     }
     try {
       let result = this.db.execute(sql, params);
-      callback && callback(null, result.get());
+      let statement = new TiSTMt(result);
+      callback && callback(null, result.all()[0]);
+      statement.finalize();
     } catch (err) {
       if (callback){
         callback(err);
