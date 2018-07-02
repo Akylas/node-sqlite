@@ -21,9 +21,10 @@ class TiSTMt {
     this.resultSet = resultSet;
   }
 
-  finalize() {
+  finalize(callback) {
     if (this.resultSet)
     this.resultSet.close();
+    callback(null);
   }
   get() {
     if (this.resultSet)
